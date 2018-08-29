@@ -1,0 +1,13 @@
+# System junks
+.DS_Store
+
+# Python junks
+*.pyc
+
+# Matlab junks
+*.m~
+*.asv
+
+# Custom
+*.local
+*.local.*
