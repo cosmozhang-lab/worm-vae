@@ -1,10 +1,15 @@
 import pyopencl as cl
 import numpy as np
+import os
 from essentials import program, ctx, queue
+
+_script_dir = os.path.split(os.path.realpath(__file__))[0]
 
 _dtype_mapping = ((np.float64, np.float32), (np.int64, np.int32))
 _dtype_mapping = tuple(map(lambda x: tuple(map(lambda y: np.dtype(y), x)), _dtype_mapping))
 _dtype_disabled = tuple(map(lambda x: x[0], _dtype_mapping))
+
+_prg = program(os.path.join(_script_dir, "mat.cl"))
 
 class Mat:
     def __init__(self, shape=None, dtype=None, init=None):
@@ -37,4 +42,5 @@ class Mat:
         return hostbuf
 
     def __add__(self, other):
-        if other 
+        if isinstance(other, Mat):
+
