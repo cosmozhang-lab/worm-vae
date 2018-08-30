@@ -2,19 +2,20 @@ import pyopencl as cl
 import numpy as np
 import os
 from essentials import program, ctx, queue
+from gtypes import gtype, is_gtype_valid
 
 _script_dir = os.path.split(os.path.realpath(__file__))[0]
 
 _dtype_mapping = ((np.float64, np.float32), (np.int64, np.int32))
-_dtype_mapping = tuple(map(lambda x: tuple(map(lambda y: np.dtype(y), x)), _dtype_mapping))
+_dtype_mapping = tuple(map(lambda x: tuple(map(lambda y: gtype(y), x)), _dtype_mapping))
 _dtype_disabled = tuple(map(lambda x: x[0], _dtype_mapping))
 
 _prg = program(os.path.join(_script_dir, "mat.cl"))
 
 class Mat:
     def __init__(self, shape=None, dtype=None, init=None):
-        if not dtype is None and np.dtype(dtype) in _dtype_disabled:
-            raise ValueError("Type %s is not allowed" % str(np.dtype(dtype)))
+        if not dtype is None and not is_gtype_valid(dtype):
+            raise ValueError("Type %s is not allowed" % str(gtype(dtype)))
         if init is None:
             hostbuf = None
         else:
@@ -24,15 +25,15 @@ class Mat:
                     hostbuf = hostbuf.astype(_dtype_mapping_item[1])
         if hostbuf is None:
             self.shape = shape or tuple()
-            self.dtype = np.dtype(dtype)
+            self.dtype = gtype(dtype)
             hostbuf = np.empty(self.shape, dtype=self.dtype)
         if len(hostbuf.shape) == 0:
             self.shape = shape or tuple()
-            self.dtype = np.dtype(dtype or hostbuf.dtype)
+            self.dtype = gtype(dtype or hostbuf.dtype)
             hostbuf = np.zeros(self.shape, dtype=self.dtype) + hostbuf.astype(self.dtype)
         else:
             self.shape = hostbuf.shape
-            self.dtype = np.dtype(dtype or hostbuf.dtype)
+            self.dtype = gtype(dtype or hostbuf.dtype)
             hostbuf = hostbuf.astype(self.dtype)
         self.buffer = cl.Buffer(ctx, cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR, hostbuf=hostbuf)
 
