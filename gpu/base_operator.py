@@ -1,13 +1,13 @@
 import pyopencl as cl
 import numpy as np
 from essentials import program, ctx
-from dtypes import _modgpu_supported_dtype_gputype_mapping
+from dtypes import _modgpu_supported_dtype_gputype_mappings
 
 class BaseOperatorForType:
     def __init__(self, clprg):
         self.kernel_base = clprg.op
-        self.kernel_scaler = clprg.op_scaler
-        self.kernel_byscaler = clprg.op_byscaler
+        self.kernel_scalar = clprg.op_scalar
+        self.kernel_byscalar = clprg.op_byscalar
 
 class BaseOperator:
     def __init__(self, clprgs):
@@ -16,7 +16,7 @@ class BaseOperator:
 
 def _build_base_operator(name, clexpr):
     clfuncs = dict()
-    for dtypeitem in _modgpu_supported_dtype_gputype_mapping:
+    for dtypeitem in _modgpu_supported_dtype_gputype_mappings:
         gtype = dtypeitem[0]
         gputype = dtypeitem[1]
         prg = cl.Program(ctx, """
@@ -25,12 +25,12 @@ def _build_base_operator(name, clexpr):
                 int gid = get_global_id(0);
                 res_g[gid] = """ + clexpr.replace("a", "a_g[gid]").replace("b", "b_g[gid]") + """;
             }
-            __kernel void op_scaler(__global const """ + gputype + """ *a_g, __global const """ + gputype + """ b, __global """ + gputype + """ *res_g)
+            __kernel void op_scalar(__global const """ + gputype + """ *a_g, __global const """ + gputype + """ b, __global """ + gputype + """ *res_g)
             {
                 int gid = get_global_id(0);
                 res_g[gid] = """ + clexpr.replace("a", "a_g[gid]").replace("b", "b") + """;
             }
-            __kernel void op_byscaler(__global const """ + gputype + """ a, __global const """ + gputype + """ *b_g, __global """ + gputype + """ *res_g)
+            __kernel void op_byscalar(__global const """ + gputype + """ a, __global const """ + gputype + """ *b_g, __global """ + gputype + """ *res_g)
             {
                 int gid = get_group_id(0);
                 res_g[gid] = """ + clexpr.replace("a", "a").replace("b", "b_g[gid]") + """;
