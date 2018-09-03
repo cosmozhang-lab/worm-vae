@@ -1,9 +1,9 @@
 import pyopencl as cl
 import numpy as np
 import os
-from essentials import program, ctx, queue
-from gtypes import gtype, is_gtype_valid, map_type
-from base_operator import \
+from .essentials import program, ctx, queue
+from .gtypes import gtype, is_gtype_valid, map_type
+from .base_operator import \
     base_operator_add,\
     base_operator_sub,\
     base_operator_mul,\
@@ -114,8 +114,6 @@ class Mat:
             raise ValueError("Neither is a matrix")
             return base_op[va.dtype]
 
-
-
     def __add__(self, other):
         return Mat._check_other_and_take_op(base_operator_add, self, other)
     def __radd__(self, other):
@@ -123,4 +121,58 @@ class Mat:
     def __iadd__(self, other):
         return Mat._check_other_and_take_op(base_operator_add, self, other, self)
 
+    def __sub__(self, other):
+        return Mat._check_other_and_take_op(base_operator_sub, self, other)
+    def __rsub__(self, other):
+        return Mat._check_other_and_take_op(base_operator_sub, other, self)
+    def __isub__(self, other):
+        return Mat._check_other_and_take_op(base_operator_sub, self, other, self)
+
+    def __mul__(self, other):
+        return Mat._check_other_and_take_op(base_operator_mul, self, other)
+    def __rmul__(self, other):
+        return Mat._check_other_and_take_op(base_operator_mul, other, self)
+    def __imul__(self, other):
+        return Mat._check_other_and_take_op(base_operator_mul, self, other, self)
+
+    def __div__(self, other):
+        return Mat._check_other_and_take_op(base_operator_div, self, other)
+    def __rdiv__(self, other):
+        return Mat._check_other_and_take_op(base_operator_div, other, self)
+    def __idiv__(self, other):
+        return Mat._check_other_and_take_op(base_operator_div, self, other, self)
+
+
+    def __and__(self, other):
+        return Mat._check_other_and_take_op(base_operator_and, self, other)
+    def __rand__(self, other):
+        return Mat._check_other_and_take_op(base_operator_and, other, self)
+    def __iand__(self, other):
+        return Mat._check_other_and_take_op(base_operator_and, self, other, self)
+
+    def __or__(self, other):
+        return Mat._check_other_and_take_op(base_operator_or, self, other)
+    def __ror__(self, other):
+        return Mat._check_other_and_take_op(base_operator_or, other, self)
+    def __ior__(self, other):
+        return Mat._check_other_and_take_op(base_operator_or, self, other, self)
+
+
+    def __xor__(self, other):
+        return Mat._check_other_and_take_op(base_operator_xor, self, other)
+    def __rxor__(self, other):
+        return Mat._check_other_and_take_op(base_operator_xor, other, self)
+    def __ixor__(self, other):
+        return Mat._check_other_and_take_op(base_operator_xor, self, other, self)
+
+    def __eq__(self, other):
+        return Mat._check_other_and_take_op(base_operator_eq, self, other)
+    def __gt__(self, other):
+        return Mat._check_other_and_take_op(base_operator_gt, self, other)
+    def __ge__(self, other):
+        return Mat._check_other_and_take_op(base_operator_ge, self, other)
+    def __lt__(self, other):
+        return Mat._check_other_and_take_op(base_operator_lt, self, other)
+    def __le__(self, other):
+        return Mat._check_other_and_take_op(base_operator_le, self, other)
 

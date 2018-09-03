@@ -1,7 +1,24 @@
 import numpy as np
 
-class gtype(np.dtype):
-    pass
+class gtype:
+    @property
+    def dtype(self):
+        return self._dtype
+
+    def __init__(self, init):
+        if isinstance(init, gtype):
+            self._dtype = init.dtype
+        else:
+            self._dtype = np.dtype(init)
+
+    def __eq__(self, other):
+        if isinstance(other, np.dtype):
+            return self.dtype == other
+        elif isinstance(other, gtype):
+            return self.dtype == other
+
+    def __str__(self):
+        return str(self.dtype)
 
 float32 = gtype(np.float32)
 int32 = gtype(np.int32)
