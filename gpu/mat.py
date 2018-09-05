@@ -92,14 +92,33 @@ class Mat:
             self._buffer = _sharing_parent.buffer
         self._sharing_children = []
 
+    # Before changes the data of this Mat instance, we must detach it from the memory-sharing relations
     def _detach_sharing(self):
         if not self._sharing_parent is None:
             self._sharing_parent._sharing_children = list(filter(lambda x: x != self, self._sharing_parent._sharing_children)) + self._sharing_children
+            for child in self._sharing_children:
+                child._sharing_parent = self._sharing_parent
+                child._buffer = self._sharing_parent._buffer
+                for grandchild in child._sharing_children:
+                    grandchild._buffer = child._buffer
             self._sharing_parent = None
             self._sharing_children = []
             _old_buffer = self._buffer
             self._buffer = cl.Buffer(ctx, cl.mem_flags.READ_WRITE, size = prod(self.shape) * self.gtype.elemsize)
             cl.enqueue_copy(queue, self._buffer, _old_buffer)
+        elif len(self._sharing_children) > 0:
+            newparent = self._sharing_children[0]
+            newparent._sharing_parent = None
+            newparent._buffer = cl.Buffer(ctx, cl.mem_flags.READ_WRITE, size = prod(self.shape) * self.gtype.elemsize)
+            cl.enqueue_copy(queue, newparent._buffer, self._buffer)
+            for grandchild in newparent._sharing_children:
+                grandchild._buffer = newparent._buffer
+            for child in self._sharing_children[1:]:
+                child._sharing_parent = newparent
+                child._buffer = newparent._buffer
+                for grandchild in child._sharing_children:
+                    grandchild._buffer = child._buffer
+            self._sharing_children = []
 
     def gather(self):
         hostbuf = np.empty(self._shape, dtype=self._gtype.dtype)
