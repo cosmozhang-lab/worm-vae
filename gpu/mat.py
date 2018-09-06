@@ -25,15 +25,22 @@ _dtype_mapping = ((np.float64, np.float32), (np.int64, np.int32))
 _dtype_mapping = tuple(map(lambda x: tuple(map(lambda y: np.dtype(y), x)), _dtype_mapping))
 _dtype_disabled = tuple(map(lambda x: x[0], _dtype_mapping))
 
-_kernel_matmul = {}
-for _sptgtype in _modgpu_supported_gtypes:
-    typename = _sptgtype.name
-    gputype = _sptgtype.gputype
-    dtype = _sptgtype.dtype
-    prg = rawprogram(os.path.join(_script_dir, "matmul.cl"), {"basetype": gputype})
-    kernel = prg.matmul
-    kernel.set_scalar_arg_dtypes([np.int32, None, None, None])
-    _kernel_matmul[typename] = kernel
+def program_with_basetypes(filename):
+    kernels = {}
+    for _sptgtype in _modgpu_supported_gtypes:
+        typename = _sptgtype.name
+        gputype = _sptgtype.gputype
+        dtype = _sptgtype.dtype
+        prg = rawprogram(os.path.join(_script_dir, filename), {"basetype": gputype})
+        kernel = prg.matmul
+        kernels[typename] = kernel
+    return kernels
+
+_kernel_matmul = program_with_basetypes("matmul.cl")
+for k in _kernel_matmul:
+    _kernel_matmul[k].set_scalar_arg_dtypes([np.int32, None, None, None])
+_kernel_transpose = program_with_basetypes("transpose.cl")
+
 
 class Mat:
     @property
@@ -48,6 +55,10 @@ class Mat:
     @property
     def buffer(self):
         return self._buffer
+    @property
+    def ndims(self):
+        return len(self._shape)
+    
     
     
     def __init__(self, init=None, shape=None, datatype=None, _sharing_parent=None):
@@ -270,5 +281,28 @@ class Mat:
         return Mat._matmul(other, self)
     def __imatmul__(self, other):
         raise NotImplementedError("Matrix multiplication have no augmented version")
+
+    def reshape(self, newshape):
+        vo = Mat(_sharing_parent=self)
+        newshape = tuple(newshape)
+        oldsize = prod(vo._shape)
+        newsize = prod(newshape)
+        if oldsize != newsize:
+            raise ValueError("Reshape must not change the data size of the matrix")
+        vo._shape = newshape
+        return vo
+
+    def transpose(self):
+        if self.ndims != 2:
+            raise NotImplementedError("Transpose of non-2D matrix is not supported")
+        vo = Mat(datatype=self._gtype, shape=(self._shape[1], self._shape[0]))
+        kernel = _kernel_transpose[vo.gtype.name]
+        kernel(queue, vo.shape, None, self.buffer, vo.buffer)
+        return vo
+
+    @property
+    def T(self):
+        return self.transpose()
+    
 
 
